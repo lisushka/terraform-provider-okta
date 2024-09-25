@@ -76,6 +76,12 @@ func resourceGroup() *schema.Resource {
 					return reflect.DeepEqual(oldCustomAttrs, newCustomAttrs)
 				},
 			},
+			"custom_profile_attributes_to_ignore": {
+				Type:        schema.TypeSet,
+				Optional:    true,
+				Elem:        &schema.Schema{Type: schema.TypeString},
+				Description: "List of custom_profile_attribute keys that should be excluded from being managed by Terraform.",
+			},
 		},
 	}
 }
@@ -110,6 +116,10 @@ func resourceGroupCreate(ctx context.Context, d *schema.ResourceData, m interfac
 }
 
 func resourceGroupRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
+	return resourceGroupReadFilterCustomAttributes(ctx, d, m, []string{})
+}
+
+func resourceGroupReadFilterCustomAttributes(ctx context.Context, d *schema.ResourceData, m interface{}, filteredCustomAttributes []string) diag.Diagnostics {
 	logger(m).Info("reading group", "id", d.Id(), "name", d.Get("name").(string))
 	g, resp, err := getOktaClientFromMetadata(m).Group.GetGroup(ctx, d.Id())
 	if err := suppressErrorOn404(resp, err); err != nil {
@@ -124,7 +134,8 @@ func resourceGroupRead(ctx context.Context, d *schema.ResourceData, m interface{
 	_ = d.Set("description", g.Profile.Description)
 
 	if g.Profile.GroupProfileMap != nil {
-		customProfile, err := json.Marshal(g.Profile.GroupProfileMap)
+		rawProfileMap := flattenGroupAttributes(g, filteredCustomAttributes)
+		customProfile, err := json.Marshal(rawProfileMap)
 		if err != nil {
 			return diag.Errorf("failed to read custom profile attributes from group: %s", g.Profile.Name)
 		}
@@ -142,7 +153,8 @@ func resourceGroupUpdate(ctx context.Context, d *schema.ResourceData, m interfac
 	if err != nil {
 		return diag.Errorf("failed to update group: %v", err)
 	}
-	return resourceGroupRead(ctx, d, m)
+	filteredCustomAttributes := convertInterfaceToStringSet(d.Get("custom_profile_attributes_to_ignore"))
+	return resourceGroupReadFilterCustomAttributes(ctx, d, m, filteredCustomAttributes)
 }
 
 func resourceGroupDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {

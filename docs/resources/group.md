@@ -38,6 +38,7 @@ resource "okta_group" "example" {
 ### Optional
 
 - `custom_profile_attributes` (String) JSON formatted custom attributes for a group. It must be JSON due to various types Okta allows.
+- `custom_profile_attributes_to_ignore` - (Optional) List of custom_profile_attribute keys that should be excluded from being managed by Terraform. This is useful in situations where specific custom fields may contain sensitive information and should be managed outside of Terraform.
 - `description` (String) The description of the Okta Group.
 - `skip_users` (Boolean, Deprecated) Ignore users sync. This is a temporary solution until 'users' field is supported in all the app-like resources
 

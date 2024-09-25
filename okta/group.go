@@ -113,3 +113,48 @@ func removeUserFromGroups(ctx context.Context, client *sdk.Client, userId string
 	}
 	return nil
 }
+
+func isCustomGroupAttr(key string) bool {
+	return !contains(profileKeys, key)
+}
+
+func flattenGroupAttributes(g *sdk.GroupProfileMap, filteredCustomAttributes []string) map[string]interface{} {
+	customAttributes := make(map[string]interface{})
+
+	for k, v := range g {
+		if v != nil {
+			attrKey := camelCaseToUnderscore(k)
+
+			if isCustomGroupAttr(attrKey) {
+
+				// Exclude any custom attributes that should be filtered
+				if contains(filteredCustomAttributes, attrKey) {
+					continue
+				}
+
+				// Supporting any potential type
+				ref := reflect.ValueOf(v)
+				switch ref.Kind() {
+				case reflect.String:
+					customAttributes[k] = ref.String()
+				case reflect.Float64:
+					customAttributes[k] = ref.Float()
+				case reflect.Int:
+					customAttributes[k] = ref.Int()
+				case reflect.Bool:
+					customAttributes[k] = ref.Bool()
+				case reflect.Slice:
+					rawArr := v.([]interface{})
+					customAttributes[k] = rawArr
+				case reflect.Map:
+					rawMap := v.(map[string]interface{})
+					customAttributes[k] = rawMap
+				}
+			} else {
+				attrs[attrKey] = v
+			}
+		}
+	}
+
+	return json.Marshal(customAttributes)
+}
