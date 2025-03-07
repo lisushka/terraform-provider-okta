@@ -134,7 +134,7 @@ func resourceGroupReadFilterCustomAttributes(ctx context.Context, d *schema.Reso
 	_ = d.Set("description", g.Profile.Description)
 
 	if g.Profile.GroupProfileMap != nil {
-		rawProfileMap := flattenGroupAttributes(g, filteredCustomAttributes)
+		rawProfileMap := flattenGroupAttributes(g.Profile.GroupProfileMap, filteredCustomAttributes)
 		customProfile, err := json.Marshal(rawProfileMap)
 		if err != nil {
 			return diag.Errorf("failed to read custom profile attributes from group: %s", g.Profile.Name)
