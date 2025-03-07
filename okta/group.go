@@ -3,6 +3,7 @@ package okta
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/okta/terraform-provider-okta/sdk"
 	"github.com/okta/terraform-provider-okta/sdk/query"
@@ -118,7 +119,7 @@ func isCustomGroupAttr(key string) bool {
 	return !contains(profileKeys, key)
 }
 
-func flattenGroupAttributes(g *sdk.GroupProfileMap, filteredCustomAttributes []string) map[string]interface{} {
+func flattenGroupAttributes(g sdk.GroupProfileMap, filteredCustomAttributes []string) map[string]interface{} {
 	customAttributes := make(map[string]interface{})
 
 	for k, v := range g {
@@ -150,11 +151,9 @@ func flattenGroupAttributes(g *sdk.GroupProfileMap, filteredCustomAttributes []s
 					rawMap := v.(map[string]interface{})
 					customAttributes[k] = rawMap
 				}
-			} else {
-				attrs[attrKey] = v
 			}
 		}
 	}
 
-	return json.Marshal(customAttributes)
+	return customAttributes
 }
